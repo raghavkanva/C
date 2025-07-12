@@ -3,7 +3,6 @@ void main(){
     int arr[2][2]={{1,2},{3,4}};
     disp1(arr,2,2);
     disp2(arr,2,2);
-    //disp3(arr,2,2);
 }
 disp1(int *p, int r, int c){
     int i,j;
