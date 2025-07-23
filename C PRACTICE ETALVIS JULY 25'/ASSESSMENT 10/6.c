@@ -12,7 +12,7 @@ int main(void) {
     scanf("%d",&a);
     int len = countDigit(a);
     for(int i=0;i<len;i++) {
-        printf("%c\n",a/10+'0');
+        printf("%c\n",a%10+'0');
         a=a/10;
     }
     return 0;
