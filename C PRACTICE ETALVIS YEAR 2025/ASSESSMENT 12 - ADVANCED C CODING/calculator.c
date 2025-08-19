@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 
 //Addition
 void add(char *num1, char *num2);
