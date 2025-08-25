@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 
 //Addition
 void add(char *num1, char *num2);
@@ -26,10 +25,10 @@ char *strcpy_custom(char *dest, const char *src);
 int main() {
     char input[103] = {0};
     while (1) {
-        printf("Calc >"); // removed leading \n for prompt
+        printf("Calc >"); 
         scanf("%s",input);
         if (strcmp(input, "Exit") == 0) {
-            printf("Thank you for using this Calculator\n"); // removed leading \n for thank you
+            printf("Thank you for using this Calculator\n");
             break;
         }
         int len = strlen_custom(input);
