@@ -49,7 +49,7 @@ bool solve_8_queens(bool board[MAX][MAX], int cols) {
             //If okay iterate through subsequent columns
             if (solve_8_queens(board, cols + 1)) return true;
 
-            //If it returns false, reverse the current position as false an try to go back again and see
+            //If it returns false, reverse the current position as false and try to go back again and see
             board[rows][cols] = false;
         }
     }
@@ -74,23 +74,29 @@ bool check_row(bool board[MAX][MAX], int rows, int cols) {
     return true;
 }
 
-// check upper diagonal
+// check upper diagonal particularly upper left part
 
 bool check_upper_diagonal(bool board[MAX][MAX], int rows, int cols) {
-    for (int cur_row = rows, check_col = cols; cur_row >= 0 && check_col >= 0; cur_row--, check_col--) {
+    //We don't need to check the element at board[rows][cols] so we move
+    //to check next upper left diagonal element
+    for (int cur_row = rows - 1, check_col = cols - 1; cur_row >= 0 && check_col >= 0; cur_row--, check_col--) {
         if (board[cur_row][check_col]) return false;
     }
     return true;
 }
 
-// check lower diagonal
+// check lower diagonal particularly lower left part
 
 bool check_lower_diagonal(bool board[MAX][MAX], int rows, int cols) {
-    for (int cur_row = rows, check_col = cols; cur_row < MAX && check_col >= 0; cur_row++, check_col--) {
+    //We don't need to check the element at board[rows][cols] so we move
+    //to check next lower left diagonal element
+    for (int cur_row = rows + 1, check_col = cols - 1; cur_row < MAX && check_col >= 0; cur_row++, check_col--) {
         if (board[cur_row][check_col]) return false;
     }
     return true;
 }
+
+//We don't need to check upper and lower right part as it is checked subsequently by recursive functions
 
 void print_solution(bool board[MAX][MAX]) {
     int count = 1;
