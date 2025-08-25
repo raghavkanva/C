@@ -8,6 +8,7 @@
 #define MAX 8
 
 // Define the functions
+
 bool solve_8_queens(bool board[MAX][MAX], int cols);
 void print_solution(bool board[MAX][MAX]);
 bool safe_check(bool board[MAX][MAX], int rows, int cols);
@@ -18,10 +19,12 @@ bool check_lower_diagonal(bool board[MAX][MAX], int rows, int cols);
 int main() {
     // create a 2-d array for storing the index of the location of queens
     bool board[MAX][MAX] = {false};
+
     // solve function
     if (solve_8_queens(board, 0)) {
         print_solution(board);
     }
+
     else {
         printf("No Matches of Queens can be done.");
     }
@@ -29,21 +32,28 @@ int main() {
 }
 
 // Function to Solve the 8 Queens problem
+
 bool solve_8_queens(bool board[MAX][MAX], int cols) {
+
     //To check if all columns are checked
     if (cols >= MAX) return true;
 
+
     //Iterate through each row
     for (int rows = 0; rows < MAX; rows++) {
+
         // check if it is safe to place at this position
         if (safe_check(board, rows, cols)) {
             board[rows][cols] = true;
+
             //If okay iterate through subsequent columns
             if (solve_8_queens(board, cols + 1)) return true;
+
             //If it returns false, reverse the current position as false an try to go back again and see
             board[rows][cols] = false;
         }
     }
+
     //If you cannot place Queen in either of the 8 rows in this column, return false
     return false;
 }
@@ -56,6 +66,7 @@ bool safe_check(bool board[MAX][MAX], int rows, int cols) {
 }
 
 // check for the current row
+
 bool check_row(bool board[MAX][MAX], int rows, int cols) {
     for (int cur_col = 0; cur_col < cols; cur_col++) {
         if (board[rows][cur_col]) return false;
@@ -64,6 +75,7 @@ bool check_row(bool board[MAX][MAX], int rows, int cols) {
 }
 
 // check upper diagonal
+
 bool check_upper_diagonal(bool board[MAX][MAX], int rows, int cols) {
     for (int cur_row = rows, check_col = cols; cur_row >= 0 && check_col >= 0; cur_row--, check_col--) {
         if (board[cur_row][check_col]) return false;
@@ -72,6 +84,7 @@ bool check_upper_diagonal(bool board[MAX][MAX], int rows, int cols) {
 }
 
 // check lower diagonal
+
 bool check_lower_diagonal(bool board[MAX][MAX], int rows, int cols) {
     for (int cur_row = rows, check_col = cols; cur_row < MAX && check_col >= 0; cur_row++, check_col--) {
         if (board[cur_row][check_col]) return false;
