@@ -1,6 +1,5 @@
 #include <stdbool.h>
 #include <stdio.h>
-#include <string.h>
 
 #define MAX_NO_OF_LINES 50
 #define MAX_LENGTH 50
