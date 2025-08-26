@@ -7,18 +7,13 @@
 #define MAX_SYMBOLS 50
 
 // Function declarations
-
+int reg_code(char *reg);
+int reg_code_2(char *reg);
 int instruction_size(char mnemonic[10]);
-int strlen_c(char input_cur[MAX_LENGTH]);
 void opcode(char input_line[MAX_LENGTH]);
-bool is_fixed_instruction(char *mnemonic);
-char *strcpy_c(char *dest, const char *src);
-void strcspn_nl(char input_cur[MAX_LENGTH]);
-char *strchr_c(const char *str, int character);
 char *fgets_c(char *buffer, int limit, FILE *stream);
 void opcode_RST(char mnemonic[10], unsigned int addr);
 void opcode_fixed(char mnemonic[10], unsigned int addr);
-int strcmp_c(char input_cur[MAX_LENGTH], const char *text);
 void opcode_MVI(char reg_dest[10], char data[10], unsigned int addr);
 void opcode_acc_instr(char *mnemonic, char *data, unsigned int addr);
 void opcode_IN_OUT(char mnemonic[10], char port[10], unsigned int addr);
@@ -27,8 +22,15 @@ void opcode_instruction_rp(char mnemonic[10], char regis[10], unsigned int addr)
 void opcode_instruction_array1(char mnemonic[10], char regis[10], char data[10], unsigned int addr);
 void opcode_instruction_cond(char mnemonic[10], char cond[10], unsigned int addr,char* target_label);
 
-int reg_code(char *reg);
-int reg_code_2(char *reg);
+//CUSTOM STRING FUNCTIONS
+char *strcpy_c(char *dest, const char *src);
+void strcspn_nl(char input_cur[MAX_LENGTH]);
+char *strchr_c(const char *str, int character);
+int strcmp_c(char input_cur[MAX_LENGTH], const char *text);
+int strlen_c(char input_cur[MAX_LENGTH]);
+
+//INSTRUCTIONS CHECKING FUNCTIONS
+bool is_fixed_instruction(char *mnemonic);
 bool check_if_present_ia1(char *mnemonic);
 bool check_if_present_ia2(char *mnemonic);
 bool check_if_present_acc(char *mnemonic);
@@ -57,7 +59,7 @@ struct sym symbol_table[MAX_SYMBOLS];
 int sym_count=0;
 
 //To keep track of the address (Program Counter)
-unsigned int pc=0x0000;
+unsigned int program_counter=0x0000;
 
 //Base Address
 unsigned int base_address = 0x2000;
@@ -88,6 +90,31 @@ int reg_code(char *reg) {
 int reg_code_2(char *reg) {
     for(int i=0;i<4;i++) if (strcmp_c(reg,regs_2[i])==1) return i;
     return -1;
+}
+
+//STRING FUNCTIONS
+// Remove newline character
+void strcspn_nl(char input_cur[MAX_LENGTH]) {
+    for(int i=0; input_cur[i]!='\0'; i++) {
+        if(input_cur[i]=='\n') { input_cur[i]='\0'; break; }
+    }
+}
+
+// String length
+int strlen_c(char input_cur[MAX_LENGTH]) {
+    int length = 0;
+    for (int i=0; input_cur[i]!='\0'; i++) length++;
+    return length;
+}
+
+// Custom strcmp function returning 1 if equal
+int strcmp_c(char input_cur[MAX_LENGTH],const char *text) {
+    int i = 0;
+    while(input_cur[i]!='\0' && text[i]!='\0') {
+        if(input_cur[i] != text[i]) return 0;
+        i++;
+    }
+    return (input_cur[i]=='\0' && text[i]=='\0') ? 1 : 0;
 }
 
 // To check if the given instruction is present in the instruction_array1
@@ -134,6 +161,33 @@ bool check_if_present_acc(char *mnemonic) {
         }
     }
     return false;
+}
+
+
+// Fixed instructions table
+struct fixed_instr {
+    char *mnemonic;
+    int opcode;
+};
+
+struct fixed_instr fixed_table[] = {
+    {"NOP",0x00},{"HLT",0x76},{"EI",0xFB},{"DI",0xF3},
+    {"RLC",0x07},{"RRC",0x0F},{"RAL",0x17},{"RAR",0x1F},
+    {"CMA",0x2F},{"CMC",0x3F},{"STC",0x37},{"DAA",0x27},
+    {"RIM",0x20},{"SIM",0x30}
+};
+
+// Function to check if mnemonic exists in fixed_table
+// Returns true if found and increments pc, false otherwise
+bool is_fixed_instruction(char *mnemonic) {
+    int count = sizeof(fixed_table)/sizeof(fixed_table[0]);
+    for(int i = 0; i < count; i++) {
+        if(strcmp_c(mnemonic, fixed_table[i].mnemonic) == 1) {
+            program_counter += 1;  // Increment PC for 1-byte instruction
+            return true;  // Found in fixed_table
+        }
+    }
+    return false;  // Not found
 }
 
 //Own fgets function
@@ -186,103 +240,6 @@ char *strchr_c(const char *str, int character) {
         str++;
     }
     return NULL;  // not found
-}
-int main() {
-    char input_lines[MAX_NO_OF_LINES][MAX_LENGTH];
-    int total_lines = 0;
-
-    printf("Enter up to 50 Instructions with HLT at end:\n");
-
-    for (int line_iter = 0; line_iter < MAX_NO_OF_LINES; line_iter++) {
-        //Get the instruction input line by line
-        if (!fgets_c(input_lines[line_iter], MAX_LENGTH, stdin)) {
-            break;
-        }
-        //Remove the newline
-        strcspn_nl(input_lines[line_iter]);
-
-        //Label Handling
-        char temp_line[MAX_LENGTH];
-        strcpy_c(temp_line,input_lines[total_lines]);
-        char *label_pos=strchr_c(temp_line,':');
-        if(label_pos){
-            //Add the null terminator
-            *label_pos='\0';
-            //copy to label in symbol table arrray
-            strcpy_c(symbol_table[sym_count].label,temp_line);
-            //Store curre
-            symbol_table[sym_count].addr= pc + base_address;
-            sym_count++;
-
-            //update the remainig instruction to input
-            strcpy_c(input_lines[total_lines],label_pos+1);
-        }
-
-        if (strlen_c(input_lines[line_iter]) == 0) break;
-        if (strcmp_c(input_lines[line_iter], "HLT") == 1) {
-            total_lines++;
-            break;
-        }
-        total_lines++;
-    }
-
-    printf("--Addr OP LD UD--\n");
-    for (int line_iter = 0; line_iter < total_lines; line_iter++) {
-        opcode(input_lines[line_iter]);
-    }
-    return 0;
-}
-
-// Main opcode generator function
-void opcode(char input_line[MAX_LENGTH]) {
-    char mnemonic[10], operand1[10], operand2[10];
-    int n = sscanf(input_line,"%s %[^,],%s", mnemonic, operand1, operand2);
-
-    //Update the current address based on the instruction size
-    unsigned int curr_addr = base_address + pc;
-
-    //MOV
-    if (strcmp_c(mnemonic,"MOV") == 1 && n == 3) opcode_MOV(operand1, operand2, curr_addr);
-
-    //JMP/CALL/RST
-    else if(check_transfer_instructions(mnemonic)){
-        char cond[10]="", target_label[10]="";
-
-        //If JMP
-        if(n==3) {
-            sscanf(operand1,"%s",cond);
-            strcpy_c(target_label,operand2);
-        }
-        else if(n==2) {
-            strcpy_c(target_label,operand1);
-        }
-        opcode_instruction_cond(mnemonic,cond,curr_addr,target_label);
-    }
-
-    // Arithmetic/Logical Opcode Function
-    else if (check_if_present_ia1(mnemonic)) opcode_instruction_array1(mnemonic, operand1, operand2, curr_addr);
-
-    // Register pair instructions opcode generation function
-    else if (check_if_present_ia2(mnemonic)) opcode_instruction_rp(mnemonic, operand1, curr_addr);
-
-    //MVI
-    else if (strcmp_c(mnemonic,"MVI") == 1 && n == 3) opcode_MVI(operand1, operand2, curr_addr);
-
-    //Accu Instrc
-    else if (check_if_present_acc(mnemonic)) opcode_acc_instr(mnemonic, operand1, curr_addr);
-
-    //RST
-    else if(strcmp_c(mnemonic,"RST")==1) opcode_RST(operand1, curr_addr);
-
-    //IN/OUT
-    else if(strcmp_c(mnemonic,"IN")==1 || strcmp_c(mnemonic,"OUT")==1) {
-        opcode_IN_OUT(mnemonic, operand1, curr_addr);
-    }
-
-    //Other Standalone Fixed Instructions
-    else if (is_fixed_instruction(mnemonic)) opcode_fixed(mnemonic,curr_addr);
-
-    pc += instruction_size(mnemonic);
 }
 
 // MOV Opcode Function
@@ -412,44 +369,6 @@ void opcode_IN_OUT(char mnemonic[10], char port[10], unsigned int addr) {
     if(strcmp_c(mnemonic,"IN")==1) printf("0x%04X %02X %02X\n", addr, 0xDB, p&0xFF);
     else if(strcmp_c(mnemonic,"OUT")==1) printf("0x%04X %02X %02X\n", addr, 0xD3, p&0xFF);
 }
-
-// Remove newline character
-void strcspn_nl(char input_cur[MAX_LENGTH]) {
-    for(int i=0; input_cur[i]!='\0'; i++) {
-        if(input_cur[i]=='\n') { input_cur[i]='\0'; break; }
-    }
-}
-
-// String length
-int strlen_c(char input_cur[MAX_LENGTH]) {
-    int length = 0;
-    for (int i=0; input_cur[i]!='\0'; i++) length++;
-    return length;
-}
-
-// Custom strcmp function returning 1 if equal
-int strcmp_c(char input_cur[MAX_LENGTH],const char *text) {
-    int i = 0;
-    while(input_cur[i]!='\0' && text[i]!='\0') {
-        if(input_cur[i] != text[i]) return 0;
-        i++;
-    }
-    return (input_cur[i]=='\0' && text[i]=='\0') ? 1 : 0;
-}
-
-// Fixed instructions table
-struct fixed_instr {
-    char *mnemonic;
-    int opcode;
-};
-
-struct fixed_instr fixed_table[] = {
-    {"NOP",0x00},{"HLT",0x76},{"EI",0xFB},{"DI",0xF3},
-    {"RLC",0x07},{"RRC",0x0F},{"RAL",0x17},{"RAR",0x1F},
-    {"CMA",0x2F},{"CMC",0x3F},{"STC",0x37},{"DAA",0x27},
-    {"RIM",0x20},{"SIM",0x30}
-};
-
 void opcode_fixed(char mnemonic[10], unsigned int addr) {
     int found = 0;
     int count = sizeof(fixed_table)/sizeof(fixed_table[0]);
@@ -461,18 +380,6 @@ void opcode_fixed(char mnemonic[10], unsigned int addr) {
         }
     }
     if(!found) printf("0x%04X Invalid instruction\n", addr);
-}
-// Function to check if mnemonic exists in fixed_table
-// Returns true if found and increments pc, false otherwise
-bool is_fixed_instruction(char *mnemonic) {
-    int count = sizeof(fixed_table)/sizeof(fixed_table[0]);
-    for(int i = 0; i < count; i++) {
-        if(strcmp_c(mnemonic, fixed_table[i].mnemonic) == 1) {
-            pc += 1;  // Increment PC for 1-byte instruction
-            return true;  // Found in fixed_table
-        }
-    }
-    return false;  // Not found
 }
 
 void opcode_MVI(char reg_dest[10], char data[10], unsigned int addr) {
@@ -488,4 +395,102 @@ void opcode_MVI(char reg_dest[10], char data[10], unsigned int addr) {
     }
     unsigned int opcode_val = (reg_dest[0]=='A')?0x3E : 0x06 + dest*8; // simplified formula
     printf("0x%04X %02X %02X\n", addr, opcode_val, value & 0xFF);
+}
+
+// Main opcode generator function
+void opcode(char input_line[MAX_LENGTH]) {
+    char mnemonic[10], operand1[10], operand2[10];
+    int n = sscanf(input_line,"%s %[^,],%s", mnemonic, operand1, operand2);
+
+    //Update the current address based on the instruction size
+    unsigned int curr_addr = base_address + program_counter;
+
+    //MOV
+    if (strcmp_c(mnemonic,"MOV") == 1 && n == 3) opcode_MOV(operand1, operand2, curr_addr);
+
+    //JMP/CALL/RST
+    else if(check_transfer_instructions(mnemonic)){
+        char cond[10]="", target_label[10]="";
+
+        //If JMP
+        if(n==3) {
+            sscanf(operand1,"%s",cond);
+            strcpy_c(target_label,operand2);
+        }
+        else if(n==2) {
+            strcpy_c(target_label,operand1);
+        }
+        opcode_instruction_cond(mnemonic,cond,curr_addr,target_label);
+    }
+
+    // Arithmetic/Logical Opcode Function
+    else if (check_if_present_ia1(mnemonic)) opcode_instruction_array1(mnemonic, operand1, operand2, curr_addr);
+
+    // Register pair instructions opcode generation function
+    else if (check_if_present_ia2(mnemonic)) opcode_instruction_rp(mnemonic, operand1, curr_addr);
+
+    //MVI
+    else if (strcmp_c(mnemonic,"MVI") == 1 && n == 3) opcode_MVI(operand1, operand2, curr_addr);
+
+    //Accu Instrc
+    else if (check_if_present_acc(mnemonic)) opcode_acc_instr(mnemonic, operand1, curr_addr);
+
+    //RST
+    else if(strcmp_c(mnemonic,"RST")==1) opcode_RST(operand1, curr_addr);
+
+    //IN/OUT
+    else if(strcmp_c(mnemonic,"IN")==1 || strcmp_c(mnemonic,"OUT")==1) {
+        opcode_IN_OUT(mnemonic, operand1, curr_addr);
+    }
+
+    //Other Standalone Fixed Instructions
+    else if (is_fixed_instruction(mnemonic)) opcode_fixed(mnemonic,curr_addr);
+
+    program_counter += instruction_size(mnemonic);
+}
+
+int main() {
+    char input_lines[MAX_NO_OF_LINES][MAX_LENGTH];
+    int total_lines = 0;
+
+    printf("Enter up to 50 Instructions with HLT at end:\n");
+
+    for (int line_iter = 0; line_iter < MAX_NO_OF_LINES; line_iter++) {
+        //Get the instruction input line by line
+        if (!fgets_c(input_lines[line_iter], MAX_LENGTH, stdin)) {
+            break;
+        }
+        //Remove the newline
+        strcspn_nl(input_lines[line_iter]);
+
+        //Label Handling
+        char temp_line[MAX_LENGTH];
+        strcpy_c(temp_line,input_lines[total_lines]);
+        char *label_pos=strchr_c(temp_line,':');
+        if(label_pos){
+            //Add the null terminator
+            *label_pos='\0';
+            //copy to label in symbol table arrray
+            strcpy_c(symbol_table[sym_count].label,temp_line);
+            //Store curre
+            symbol_table[sym_count].addr= program_counter + base_address;
+            sym_count++;
+
+            //update the remainig instruction to input
+            strcpy_c(input_lines[total_lines],label_pos+1);
+        }
+
+        if (strlen_c(input_lines[line_iter]) == 0) break;
+        if (strcmp_c(input_lines[line_iter], "HLT") == 1) {
+            total_lines++;
+            break;
+        }
+        total_lines++;
+    }
+
+    printf("--Addr OP LD UD--\n");
+    for (int line_iter = 0; line_iter < total_lines; line_iter++) {
+        opcode(input_lines[line_iter]);
+    }
+    return 0;
 }
